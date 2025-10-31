@@ -4,8 +4,8 @@ on:
   push:
     branches: master
   schedule:
-    - cron: '0 16 * * *' # UTC+8-0时
-    - cron: '0 4 * * *'  # UTC+8-12时
+    - cron: '0 16 * * *' # UTC+8 0时
+    - cron: '0 4 * * *'  # UTC+8 12时
 
 jobs:
   build:
