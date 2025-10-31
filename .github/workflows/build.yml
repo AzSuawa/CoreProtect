@@ -1,36 +1,53 @@
 name: Build
+
 on:
   push:
-    branches:
-      - master
-  pull_request:
-    types: [opened, synchronize, reopened]
+    branches: master
+  schedule:
+    - cron: '0 16 * * *'   # UTC+8 的 0 点 (UTC 16点)
+    - cron: '0 4 * * *'    # UTC+8 的 12 点 (UTC 4点)
+
 jobs:
   build:
-    name: Build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
+          repository: PlayPro/CoreProtect
           fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
+
       - name: Cache Maven packages
         uses: actions/cache@v4
         with:
           path: ~/.m2
           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-m2
+
       - name: Build
         run: mvn -B verify
-      - name: Package
-        run: mvn -B clean package -DskipTests
-      - name: Upload Build Artifacts
+
+      - name: Upload CoreProtect Jar
         uses: actions/upload-artifact@v4
         with:
-          name: build-files
-          path: target/
-          retention-days: 30
+          name: CoreProtect Jar
+          path: target/CoreProtect-*.jar
+          
+      - name: Get current date
+        id: date
+        run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+        
+      - name: Create Release
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ steps.date.outputs.date }}
+          name: "Daily Build ${{ steps.date.outputs.date }}"
+          body: "Daily Build"
+          draft: false
+          prerelease: false
+          artifacts: target/CoreProtect-*.jar
