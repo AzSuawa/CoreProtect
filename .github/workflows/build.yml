@@ -1,11 +1,9 @@
 name: Build
-
 on:
   push:
     branches: [master]
   schedule:
     - cron: '*/30 * * * *'
-
 jobs:
   check-changes:
     runs-on: ubuntu-latest
@@ -15,7 +13,6 @@ jobs:
     steps:
       - name: Checkout current repo
         uses: actions/checkout@v4
-        
       - name: Restore SHA cache
         id: cache-restore
         uses: actions/cache@v4
@@ -24,34 +21,28 @@ jobs:
           key: last-sha-${{ github.repository }}
           restore-keys: |
             last-sha-${{ github.repository }}
-          
       - name: Check for changes in PlayPro/CoreProtect
         id: check
         run: |
-          # 获取上游仓库最新commit SHA
           CURRENT_SHA=$(git ls-remote https://github.com/PlayPro/CoreProtect.git refs/heads/master | cut -f1)
           echo "Current SHA: $CURRENT_SHA"
-          
-          # 检查是否有缓存的上次SHA
           if [ -f .last_sha ]; then
             LAST_SHA=$(cat .last_sha)
             echo "Last SHA: $LAST_SHA"
-            
             if [ "$LAST_SHA" != "$CURRENT_SHA" ]; then
-              echo "🔄 Changes detected in PlayPro/CoreProtect"
+              echo "Changes detected in PlayPro/CoreProtect"
               echo "has-changes=true" >> $GITHUB_OUTPUT
               echo $CURRENT_SHA > .last_sha
             else
-              echo "✅ No changes in PlayPro/CoreProtect"
+              echo "No changes in PlayPro/CoreProtect"
               echo "has-changes=false" >> $GITHUB_OUTPUT
             fi
           else
-            echo "🔍 First run or cache missing, assuming changes exist"
+            echo "First run or cache missing, assuming changes exist"
             echo "has-changes=true" >> $GITHUB_OUTPUT
             echo $CURRENT_SHA > .last_sha
           fi
           echo "latest-sha=$CURRENT_SHA" >> $GITHUB_OUTPUT
-          
       - name: Save SHA cache
         if: steps.check.outputs.has-changes == 'true'
         uses: actions/cache@v4
@@ -63,7 +54,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: check-changes
     if: needs.check-changes.outputs.has-changes == 'true'
-    
     steps:
       - name: Checkout PlayPro/CoreProtect
         uses: actions/checkout@v4
@@ -71,38 +61,32 @@ jobs:
           repository: PlayPro/CoreProtect
           ref: master
           fetch-depth: 0
-
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
-
       - name: Cache Maven packages
         uses: actions/cache@v4
         with:
           path: ~/.m2
           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-m2
-
       - name: Build
         run: mvn -B verify
-
       - name: Get current datetime
         id: datetime
         run: |
           export TZ='Asia/Shanghai'
           echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
           echo "time=$(date +'%H:%M')" >> $GITHUB_OUTPUT
-          echo "datetime=$(date +'%Y-%m-%d-%H%M')" >> $GITHUB_OUTPUT  # 文件名安全格式
-          echo "display_time=$(date +'%Y-%m-%d %H:%M')" >> $GITHUB_OUTPUT  # 显示用格式
-
+          echo "datetime=$(date +'%Y-%m-%d-%H%M')" >> $GITHUB_OUTPUT
+          echo "display_time=$(date +'%Y-%m-%d %H:%M')" >> $GITHUB_OUTPUT
       - name: Upload CoreProtect Jar
         uses: actions/upload-artifact@v4
         with:
           name: CoreProtect-${{ steps.datetime.outputs.datetime }}.jar
           path: target/CoreProtect-*.jar
-
       - name: Create Release
         uses: ncipollo/release-action@v1
         with:
