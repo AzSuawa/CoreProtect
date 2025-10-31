@@ -38,24 +38,26 @@ jobs:
           echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
           echo "datetime=$(date +'%Y-%m-%d-%H%M')" >> $GITHUB_OUTPUT
           echo "time=$(date +'%H:%M')" >> $GITHUB_OUTPUT
+          echo "month=$(date +'%Y-%m')" >> $GITHUB_OUTPUT  # 新增：只到月份
 
       - name: Upload CoreProtect Jar
         uses: actions/upload-artifact@v4
         with:
           name: CoreProtect-${{ steps.datetime.outputs.datetime }}.jar
           path: target/CoreProtect-*.jar
-          
+
       - name: Create Release
         uses: ncipollo/release-action@v1
         with:
-          tag: ${{ steps.datetime.outputs.datetime }}
-          name: "${{ steps.datetime.outputs.date }} ${{ steps.datetime.outputs.time }}"
+          tag: ${{ steps.datetime.outputs.month }}  # 修改：只使用年月作为标签
+          name: "Build ${{ steps.datetime.outputs.date }} ${{ steps.datetime.outputs.time }}"
           body: |
             Automated Daily Build
             Build Information:
             - Date: ${{ steps.datetime.outputs.date }}
             - Time: ${{ steps.datetime.outputs.time }} (UTC+8)
             - Source: PlayPro/CoreProtect
+            - Tag: ${{ steps.datetime.outputs.month }} (Monthly)
           draft: false
           prerelease: true
           artifacts: target/CoreProtect-*.jar
