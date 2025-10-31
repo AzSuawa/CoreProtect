@@ -196,4 +196,12 @@ public final class WorldEditBlockState implements BlockState {
         return null;
     }
 
+    // === 新增的方法 ===
+    
+    @Override
+    public boolean isSuffocating() {
+        // 简单实现：对于大多数方块返回 false
+        // 如果需要更精确的实现，可以根据方块类型判断
+        return false;
+    }
 }
