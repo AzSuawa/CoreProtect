@@ -1,36 +1,66 @@
 name: Build
+
 on:
   push:
-    branches:
-      - master
-  pull_request:
-    types: [opened, synchronize, reopened]
+    branches: master
+    paths:
+      - 'src/**'
+      - 'pom.xml'
+      - '**.java'
+  schedule:
+    - cron: '0 16 * * *'  # UTC+8 0时 (UTC+0 16时)
+    - cron: '0 4 * * *'   # UTC+8 12时 (UTC+0 4时)
+
 jobs:
   build:
-    name: Build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+          repository: PlayPro/CoreProtect
+          fetch-depth: 0
+
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
+
       - name: Cache Maven packages
         uses: actions/cache@v4
         with:
           path: ~/.m2
           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-m2
+
       - name: Build
         run: mvn -B verify
-      - name: Package
-        run: mvn -B clean package -DskipTests
-      - name: Upload Build Artifacts
+
+      - name: Get current datetime (UTC+8)
+        id: datetime
+        run: |
+          # 设置为 UTC+8 时区
+          echo "date=$(TZ='Asia/Shanghai' date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+          echo "datetime=$(TZ='Asia/Shanghai' date +'%Y-%m-%d-%H%M')" >> $GITHUB_OUTPUT
+          echo "time=$(TZ='Asia/Shanghai' date +'%H:%M')" >> $GITHUB_OUTPUT
+
+      - name: Upload CoreProtect Jar
         uses: actions/upload-artifact@v4
         with:
-          name: build-files
-          path: target/
-          retention-days: 30
+          name: CoreProtect-${{ steps.datetime.outputs.datetime }}.jar
+          path: target/CoreProtect-*.jar
+
+      - name: Create Release
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ steps.datetime.outputs.datetime }}
+          name: "${{ steps.datetime.outputs.date }} ${{ steps.datetime.outputs.time }}"
+          body: |
+            Automated Build
+            Build Information:
+            - Date: ${{ steps.datetime.outputs.date }}
+            - Time: ${{ steps.datetime.outputs.time }} (UTC+8)
+            - Source: PlayPro/CoreProtect
+          draft: false
+          prerelease: true
+          artifacts: target/CoreProtect-*.jar
