@@ -4,8 +4,8 @@ on:
   push:
     branches: master
   schedule:
-    - cron: '0 16 * * *'   # UTC+8 的 0 点 (UTC 16点)
-    - cron: '0 4 * * *'    # UTC+8 的 12 点 (UTC 4点)
+    - cron: '0 16 * * *' # UTC+8-0时
+    - cron: '0 4 * * *'  # UTC+8-12时
 
 jobs:
   build:
@@ -32,22 +32,30 @@ jobs:
       - name: Build
         run: mvn -B verify
 
+      - name: Get current datetime
+        id: datetime
+        run: |
+          echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+          echo "datetime=$(date +'%Y-%m-%d-%H%M')" >> $GITHUB_OUTPUT
+          echo "time=$(date +'%H:%M')" >> $GITHUB_OUTPUT
+
       - name: Upload CoreProtect Jar
         uses: actions/upload-artifact@v4
         with:
-          name: CoreProtect Jar
+          name: CoreProtect-${{ steps.datetime.outputs.datetime }}.jar
           path: target/CoreProtect-*.jar
           
-      - name: Get current date
-        id: date
-        run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
-        
       - name: Create Release
         uses: ncipollo/release-action@v1
         with:
-          tag: ${{ steps.date.outputs.date }}
-          name: "Daily Build ${{ steps.date.outputs.date }}"
-          body: "Daily Build"
+          tag: ${{ steps.datetime.outputs.datetime }}
+          name: "Daily Build ${{ steps.datetime.outputs.date }} ${{ steps.datetime.outputs.time }}"
+          body: |
+            Automated Daily Build
+            Build Information:
+            - Date: ${{ steps.datetime.outputs.date }}
+            - Time: ${{ steps.datetime.outputs.time }} (UTC+8)
+            - Source: PlayPro/CoreProtect
           draft: false
-          prerelease: false
+          prerelease: true
           artifacts: target/CoreProtect-*.jar
