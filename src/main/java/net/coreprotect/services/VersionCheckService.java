@@ -61,6 +61,11 @@ public class VersionCheckService {
 
             // Store Minecraft server version for later use
             ConfigHandler.SERVER_VERSION = Integer.parseInt(bukkitVersion[1]);
+            // Store Minecraft server version for later use
+
+            // 添加调试信息以便确认版本检测正确
+            System.out.println("[CoreProtect] Detected Minecraft version: " + bukkitVersion[0] + "." + bukkitVersion[1] + (bukkitVersion.length > 2 ? "." + bukkitVersion[2] : ""));
+            System.out.println("[CoreProtect] Setting SERVER_VERSION to: " + ConfigHandler.SERVER_VERSION);
         }
         catch (Exception e) {
             e.printStackTrace();
