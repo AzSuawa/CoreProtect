@@ -1,63 +1,36 @@
 name: Build
-
 on:
   push:
-    branches: master
-  schedule:
-    - cron: '0 16 * * *' # UTC+8 0时
-    - cron: '0 4 * * *'  # UTC+8 12时
-
+    branches:
+      - master
+  pull_request:
+    types: [opened, synchronize, reopened]
 jobs:
   build:
+    name: Build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: PlayPro/CoreProtect
           fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
-
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
-
       - name: Cache Maven packages
         uses: actions/cache@v4
         with:
           path: ~/.m2
           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-m2
-
       - name: Build
         run: mvn -B verify
-
-      - name: Get current datetime
-        id: datetime
-        run: |
-          echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
-          echo "datetime=$(date +'%Y-%m-%d-%H%M')" >> $GITHUB_OUTPUT
-          echo "time=$(date +'%H:%M')" >> $GITHUB_OUTPUT
-          echo "month=$(date +'%Y-%m')" >> $GITHUB_OUTPUT  # 新增：只到月份
-
-      - name: Upload CoreProtect Jar
+      - name: Package
+        run: mvn -B clean package -DskipTests
+      - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: CoreProtect-${{ steps.datetime.outputs.datetime }}.jar
-          path: target/CoreProtect-*.jar
-
-      - name: Create Release
-        uses: ncipollo/release-action@v1
-        with:
-          tag: ${{ steps.datetime.outputs.month }}  # 修改：只使用年月作为标签
-          name: "Build ${{ steps.datetime.outputs.date }} ${{ steps.datetime.outputs.time }}"
-          body: |
-            Automated Daily Build
-            Build Information:
-            - Date: ${{ steps.datetime.outputs.date }}
-            - Time: ${{ steps.datetime.outputs.time }} (UTC+8)
-            - Source: PlayPro/CoreProtect
-            - Tag: ${{ steps.datetime.outputs.month }} (Monthly)
-          draft: false
-          prerelease: true
-          artifacts: target/CoreProtect-*.jar
+          name: build-files
+          path: target/
+          retention-days: 30
