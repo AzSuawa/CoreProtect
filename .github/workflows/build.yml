@@ -92,7 +92,10 @@ jobs:
         id: datetime
         run: |
           export TZ='Asia/Shanghai'
-          echo "datetime=$(date +'%Y-%m-%d %H:%M')" >> $GITHUB_OUTPUT
+          echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+          echo "time=$(date +'%H:%M')" >> $GITHUB_OUTPUT
+          echo "datetime=$(date +'%Y-%m-%d-%H%M')" >> $GITHUB_OUTPUT  # 文件名安全格式
+          echo "display_time=$(date +'%Y-%m-%d %H:%M')" >> $GITHUB_OUTPUT  # 显示用格式
 
       - name: Upload CoreProtect Jar
         uses: actions/upload-artifact@v4
@@ -104,11 +107,11 @@ jobs:
         uses: ncipollo/release-action@v1
         with:
           tag: ${{ steps.datetime.outputs.datetime }}
-          name: "${{ steps.datetime.outputs.datetime }}"
+          name: "${{ steps.datetime.outputs.display_time }}"
           body: |
             Automated Build
             Build Information:
-            - Time: ${{ steps.datetime.outputs.datetime }} (UTC+8)
+            - Time: ${{ steps.datetime.outputs.display_time }} (UTC+8)
             - Source: PlayPro/CoreProtect
             - Commit: ${{ needs.check-changes.outputs.latest-sha }}
           draft: false
